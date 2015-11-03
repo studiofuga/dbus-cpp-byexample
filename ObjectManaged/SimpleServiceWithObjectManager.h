@@ -19,13 +19,14 @@
 #include <core/dbus/message_streaming_operators.h>
 
 #include <MyServices.h>
+#include "ObjectManager.h"
 
 namespace dbus = core::dbus;
 using namespace std;
 
 namespace srv {
 
-    class IService {
+    class IService : public sf::dbus::ObjectManagerInterface {
     public:
         SERVICE_INTERFACE(MYSERVICES, MYOBJECTPATH);
     protected:
@@ -117,17 +118,17 @@ namespace srv {
     };
 
 
-    class ServiceSkeleton : public core::dbus::Skeleton<IService> {
+    class ServiceSkeleton : public core::dbus::Skeleton<IService>, public sf::dbus::ObjectManagerSkeleton {
+        friend class sf::dbus::ObjectManagerSkeleton;
     public:
         ServiceSkeleton(const dbus::Bus::Ptr& bus)
                 : dbus::Skeleton<IService>(bus),
+                  sf::dbus::ObjectManagerSkeleton(bus, access_service()),
                   object(access_service()->add_object_for_path(dbus::types::ObjectPath(IService::ObjectPath())))
         {
+            sf::dbus::ObjectManagerSkeleton::init(object);
             object->install_method_handler<IService::GetListOfStrings>(
                     std::bind(&ServiceSkeleton::handleGetListOfStrings, this, std::placeholders::_1));
-
-//            object->install_method_handler<IService::GetListOfStrings>(
-//                    [&](int32_t num) { handleGetListOfStrings(num); });
         }
 
         ~ServiceSkeleton() noexcept = default;

@@ -1,8 +1,9 @@
-project(MessagesReply)
+project(ObjectManaged)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES main.cpp Service.h ../Helpers.h ../MyServices.h)
+set(SOURCE_FILES
+        ObjectManager.h main.cpp ../MyServices.h SimpleServiceWithObjectManager.h)
 
 include_directories(
         /usr/local/include
@@ -14,11 +15,10 @@ link_directories(
         /usr/local/lib
 )
 
-add_executable(MessagesReply ${SOURCE_FILES})
+add_executable(ObjectManaged ${SOURCE_FILES})
 
-target_link_libraries(MessagesReply
+target_link_libraries(ObjectManaged
         dbus-cpp
         dbus-1
         pthread
-)
-
+        )
