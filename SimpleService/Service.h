@@ -18,47 +18,20 @@
 
 #include <core/dbus/message_streaming_operators.h>
 
+#include <core/dbus/interfaces/introspectable.h>
+#include <core/dbus/interfaces/object_manager.h>
+
 namespace dbus = core::dbus;
 using namespace std;
 
 namespace srv {
-    struct Introspection {
-        SERVICE_INTERFACE("org.freedesktop.DBus.Introspectable", "/com/studiofuga/test");
-    };
 
     class IService {
     protected:
         SERVICE_INTERFACE("com.studiofuga.test", "/com/studiofuga/test");
 
         struct GetListOfStrings {
-
             METHOD_SIGNATURE("GetListOfStrings", IService);
-
-            /*typedef IService Interface;
-
-            inline static const std::string& name() {
-                static const std::string s { "GetListOfStrings" };
-                return s;
-            }
-
-            inline static const std::chrono::milliseconds default_timeout()
-            {
-                return std::chrono::seconds{1};
-            }*/
-        };
-
-        struct Introspect
-        {
-            using Interface = Introspection;
-            inline static std::string name()
-            {
-                return "Introspect";
-            }
-            static const bool call_synchronously = true;
-            inline static const std::chrono::milliseconds default_timeout()
-            {
-                return std::chrono::seconds{1};
-            }
         };
 
         struct Properties {
@@ -110,17 +83,6 @@ namespace core {
                     return std::string{"com.studiofuga.test"};
                 }
             };
-
-            template<>
-            struct Service<srv::Introspection>
-            {
-                inline static const std::string& interface_name()
-                {
-                    static const std::string s{ "org.freedesktop.DBus.Introspectable" };
-                    return s;
-                }
-            };
-
         }
     }
 }
