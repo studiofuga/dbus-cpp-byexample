@@ -3,7 +3,7 @@
 using namespace std;
 
 #include "Service.h"
-using namespace bluez;
+using namespace my;
 
 #include <core/dbus/bus.h>
 #include <core/dbus/service.h>
@@ -105,13 +105,13 @@ int main()
 
     mService = dbus::Service::add_service(mBus, Service::ServiceName());
     mObject = mService->add_object_for_path(Service::ObjectPath());
-    mObject->install_method_handler<bluez::Service::Introspect>(
+    mObject->install_method_handler<my::Service::Introspect>(
             std::bind(&handle_introspection, std::placeholders::_1));
-    mObject->install_method_handler<bluez::Service::TestVec>(
+    mObject->install_method_handler<my::Service::TestVec>(
             std::bind(&handle_testvec, std::placeholders::_1));
-    mObject->install_method_handler<bluez::Service::TestDict>(
+    mObject->install_method_handler<my::Service::TestDict>(
             std::bind(&handle_testdic, std::placeholders::_1));
-    mObject->install_method_handler<bluez::Service::TestDV>(
+    mObject->install_method_handler<my::Service::TestDV>(
             std::bind(&handle_testdv, std::placeholders::_1));
 
 

@@ -15,19 +15,19 @@
 #include <core/dbus/skeleton.h>
 #include <core/dbus/bus.h>
 #include <core/dbus/object.h>
-#include <core/dbus/interfaces/properties.h>
+#include <core/dbus/property.h>
 
 #include <core/dbus/message_streaming_operators.h>
 
 #include <MyServices.h>
-#include "ObjectManager.h"
+
 
 namespace dbus = core::dbus;
 using namespace std;
 
 namespace srv {
 
-    class IService : public sf::dbus::ObjectManagerInterface, public dbus::interfaces::Properties {
+    class IService {
     public:
         SERVICE_INTERFACE(MYSERVICES, MYOBJECTPATH);
     protected:
@@ -119,17 +119,17 @@ namespace srv {
     };
 
 
-    class ServiceSkeleton : public core::dbus::Skeleton<IService>, public sf::dbus::ObjectManagerSkeleton {
-        friend class sf::dbus::ObjectManagerSkeleton;
+    class ServiceSkeleton : public core::dbus::Skeleton<IService> {
     public:
         ServiceSkeleton(const dbus::Bus::Ptr& bus)
                 : dbus::Skeleton<IService>(bus),
-                  sf::dbus::ObjectManagerSkeleton(bus, access_service()),
                   object(access_service()->add_object_for_path(dbus::types::ObjectPath(IService::ObjectPath())))
         {
-            sf::dbus::ObjectManagerSkeleton::init(object);
             object->install_method_handler<IService::GetListOfStrings>(
                     std::bind(&ServiceSkeleton::handleGetListOfStrings, this, std::placeholders::_1));
+
+            propUUID = object->get_property<IService::Properties::UUID>();
+            propUUID->set(string{"ciribiricoccola"});
         }
 
         ~ServiceSkeleton() noexcept = default;
@@ -142,6 +142,8 @@ namespace srv {
         }
 
     private:
+        std::shared_ptr<dbus::Property<IService::Properties::UUID>> propUUID;
+
         void handleGetListOfStrings(const dbus::Message::Ptr& msg)
         {
             int32_t num;

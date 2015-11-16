@@ -13,13 +13,13 @@ using namespace std;
 
 #include <core/dbus/service.h>
 
-namespace bluez {
+namespace my {
     struct Introspection {
         SERVICE_INTERFACE("org.freedesktop.DBus.Introspectable", "/com/studiofuga/test/dbus");
     };
 
     struct Service {
-        SERVICE_INTERFACE("com.studiofuga.test.dbus", "/com/studiofuga/test/dbus");
+        SERVICE_INTERFACE("com.studiofuga.test", "/com/studiofuga/test");
 
         struct TestVec {
             METHOD_SIGNATURE("TestVec", Service);
@@ -85,14 +85,14 @@ namespace core {
     namespace dbus {
         namespace traits {
             template<>
-            struct Service<bluez::Service> {
+            struct Service<my::Service> {
                 inline static const std::string interface_name() {
                     return std::string{"com.studiofuga.test.dbus"};
                 }
             };
 
             template<>
-            struct Service<bluez::Introspection>
+            struct Service<my::Introspection>
             {
                 inline static const std::string& interface_name()
                 {
