@@ -19,7 +19,8 @@ int main()
     bus->install_executor(core::dbus::asio::make_executor(bus));
     std::thread t1 { [&]() { bus->run(); } };
 
-    auto benchmark_service = dbus::announce_service_on_bus<srv::IService, srv::Service>(bus);
+    auto service = dbus::announce_service_on_bus<srv::IService, srv::Service>(bus);
+    service->sendSampleSignal();
 
     if (t1.joinable())
         t1.join();

@@ -66,6 +66,19 @@ namespace srv {
                 static const bool writable = false;
             };
         };
+
+        struct Signals {
+            struct Sample {
+                inline static std::string name() {
+                    return "Sample";
+                }
+                using Interface = IService;
+                using ArgumentType = string;
+
+                using SignalPtr = shared_ptr<dbus::Signal<Sample, ArgumentType>>;
+            };
+        };
+
     public:
         virtual ~IService() = default;
 
@@ -169,6 +182,10 @@ namespace srv {
             for (int i = 0; i < num; ++i)
                 v.emplace_back(std::string{"Sample"});
             return v;
+        }
+
+        void sendSampleSignal() {
+            getObject()->emit_signal<Signals::Sample>(std::string{"Sample"});
         }
     };
 }
