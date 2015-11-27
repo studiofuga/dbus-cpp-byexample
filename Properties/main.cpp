@@ -52,16 +52,14 @@ namespace dbus = core::dbus;
 
 int main()
 {
-    auto bus = std::make_shared<dbus::Bus>(dbus::WellKnownBus::session);
-
     std::promise<void> promise;
     auto future = promise.get_future();
     std::promise<void> endpromise;
     auto endfuture = endpromise.get_future();
 
-    auto server = [&bus, &promise, &endpromise] () {
+    auto server = [&promise, &endpromise] () {
+        auto bus = std::make_shared<dbus::Bus>(dbus::WellKnownBus::session);
         bus->install_executor(core::dbus::asio::make_executor(bus));
-        std::thread t1 { [&]() { bus->run(); } };
 
         auto service = Service::add_service(bus, MYSERVICES);
         auto object = service->add_object_for_path(types::ObjectPath(MYOBJECTPATH));
@@ -69,6 +67,7 @@ int main()
         std::cout << "Server starting" << std::endl;
 
         promise.set_value();
+        std::thread t1 { [&]() { bus->run(); } };
 
         auto property = object->get_property<MyObject::Properties::Num>();
         property->set(0);
@@ -80,8 +79,6 @@ int main()
 
             property->set(n);
 
-/* This doesn't work as well ...*/
-#if 1
             auto changed_signal = object->get_signal<core::dbus::interfaces::Properties::Signals::PropertiesChanged>();
             core::dbus::interfaces::Properties::Signals::PropertiesChanged::ArgumentType
                     args(MYSERVICES,
@@ -89,9 +86,6 @@ int main()
                                   core::dbus::types::TypedVariant<MyObject::Properties::Num::ValueType>(n)}},
                          {});
             object->emit_signal<core::dbus::interfaces::Properties::Signals::PropertiesChanged, core::dbus::interfaces::Properties::Signals::PropertiesChanged::ArgumentType>(args);
-            // send only once.
-            //changed_signal->emit(args);
-#endif
 
             std::cout << "Update: " << n << std::endl;
         }
@@ -104,7 +98,8 @@ int main()
             t1.join();
     };
 
-    auto client = [&bus, &future, &endfuture]() {
+    auto client = [&future, &endfuture]() {
+        auto bus = std::make_shared<dbus::Bus>(dbus::WellKnownBus::session);
         bus->install_executor(core::dbus::asio::make_executor(bus));
         std::thread t1 { [&]() { bus->run(); } };
 
@@ -120,6 +115,10 @@ int main()
         property->changed().connect([](uint32_t n) {
             std::cout << "Changed: " << n << std::endl;
         });
+
+        std::cout << "Current Value: " << property->get() << endl;
+        sleep(3);
+        std::cout << "Current Value: " << property->get() << endl;
 
         endfuture.get();
         std::cout << "Client Exit" << std::endl;
