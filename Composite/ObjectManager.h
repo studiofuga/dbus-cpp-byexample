@@ -48,22 +48,6 @@ namespace sf {
             virtual ~ObjectManagerInterface() noexcept = default;
         };
 
-#if 0
-        //
-        class ObjectManagerStub : public dbus::Stub<ObjectManagerInterface> {
-        public:
-            using Ptr = shared_ptr<ObjectManagerStub>;
-
-            ObjectManagerStub(const dbus::Bus::Ptr &bus)
-            : dbus::Stub<ObjectManagerInterface>(bus)
-            {
-
-            }
-
-            dbus::Service::Ptr getService() const { return access_service(); }
-        };
-#endif
-
         class ObjectManagerSkeleton {
         public:
 
@@ -123,21 +107,66 @@ namespace sf {
         public:
         };
 
+        class ObjectManagerHelper {
+        public:
+            ObjectManagerHelper (const core::dbus::types::ObjectPath &path)
+                    : mObjectPath(path) {
+            }
+            ObjectManagerHelper (core::dbus::types::ObjectPath &&path)
+                    : mObjectPath(std::move(path)) {
+            }
+
+            virtual ~ObjectManagerHelper() noexcept = default;
+
+            virtual sf::dbus::ObjectManagerSkeleton::ObjectDetails getManagedObjects() {
+                sf::dbus::ObjectManagerSkeleton::ObjectDetails d;
+                d.insert(std::make_pair(getObjectPath(), getObjectDirectory()));
+                return d;
+            }
+
+        protected:
+            core::dbus::types::ObjectPath mObjectPath;
+
+            core::dbus::types::ObjectPath getObjectPath() const { return mObjectPath; }
+
+            template <typename X>
+            using Prop = std::shared_ptr<core::dbus::Property<X>>;
+
+            template <typename X>
+            std::pair<std::string, core::dbus::types::Variant> getProperty(Prop<X> prop) const {
+                return make_pair(X::name(), core::dbus::types::Variant::encode(prop->get()));
+            };
+
+            using ObjectDirectory = std::map<std::string, core::dbus::types::Variant>;
+            using ObjectsDirectory = std::map<std::string, ObjectDirectory>;
+            ObjectsDirectory objectsDirectory;
+
+            template <typename X>
+            void addProperty (Prop<X> prop) {
+                ObjectsDirectory::iterator obit = objectsDirectory.find(X::Interface::name());
+                if (obit == objectsDirectory.end()) {
+                    auto x = objectsDirectory.insert(std::make_pair(X::Interface::name(), ObjectDirectory{}));
+                    obit = x.first;
+                }
+
+                obit->second.insert(getProperty(prop));
+            }
+
+            template <typename X>
+            Prop<X> makeProperty(core::dbus::Object::Ptr object) {
+                auto x = object->get_property<X>();
+                addProperty(x);
+                return x;
+            }
+
+            ObjectsDirectory getObjectDirectory()
+            {
+                return objectsDirectory;
+            }
+        };
+
     }
 }
-
-class ObjectManagerHelper {
-public:
-
-protected:
-    template <typename X>
-    using Prop = std::shared_ptr<core::dbus::Property<X>>;
-
-    template <typename X>
-    std::pair<std::string, core::dbus::types::Variant> getProperty(Prop<X> prop) const {
-        return make_pair(X::name(), core::dbus::types::Variant::encode(prop->get()));
-    };
-};
 
 namespace core {
     namespace dbus {

@@ -23,27 +23,20 @@ struct ServiceInterface {
     static string name() { return MYSERVICES; }
 };
 
-class FirstObject : public ObjectManagerHelper {
+struct OtherInterface {
+    static string name() { return "com.studiofuga.test.alt"; }
+};
+
+class FirstObject : public sf::dbus::ObjectManagerHelper {
 public:
     FirstObject(const core::dbus::Service::Ptr &service)
-            : object (service->add_object_for_path(types::ObjectPath{"/com/studiofuga/test/first"})) {
+            : sf::dbus::ObjectManagerHelper(core::dbus::types::ObjectPath{"/com/studiofuga/test/first"}),
+              object (service->add_object_for_path(getObjectPath())) {
 
-        propNum = object->get_property<Properties::Num>();
-    }
-
-    virtual sf::dbus::ObjectManagerSkeleton::ObjectDetails getManagedObjects() {
-        sf::dbus::ObjectManagerSkeleton::ObjectDetails d;
-
-        d.insert(std::make_pair(types::ObjectPath{"/com/studiofuga/test/first"}, getObjectDirectory()));
-
-        return d;
+        propNum = makeProperty<Properties::Num>(object);
     }
 
 public:
-    struct Methods {
-
-    };
-
     struct Properties {
         struct Num {
             inline static string name()
@@ -53,49 +46,67 @@ public:
             using Interface = ServiceInterface;
             using ValueType = uint32_t ;
             static const bool readable = true;
+            static const bool writable = true;
+        };
+    };
+
+protected:
+    core::dbus::Object::Ptr object;
+    Prop<Properties::Num> propNum;
+};
+
+class SecondObject : public sf::dbus::ObjectManagerHelper {
+public:
+    SecondObject(const core::dbus::Service::Ptr &service)
+            : ObjectManagerHelper(core::dbus::types::ObjectPath{"/com/studiofuga/test/second"}),
+              object (service->add_object_for_path(getObjectPath())) {
+        propName = makeProperty<Properties::Name>(object);
+        propComments = makeProperty<Properties::Comments>(object);
+        propValue = makeProperty<Properties::Value>(object);
+    }
+
+public:
+    struct Properties {
+        struct Name {
+            inline static string name()
+            {
+                return std::string {"Name"};
+            };
+            using Interface = OtherInterface;
+            using ValueType = std::string;
+            static const bool readable = true;
             static const bool writable = false;
+        };
+        struct Comments {
+            inline static string name()
+            {
+                return std::string {"Comments"};
+            };
+            using Interface = ServiceInterface;
+            using ValueType = std::string;
+            static const bool readable = true;
+            static const bool writable = true;
+            inline static const std::chrono::milliseconds default_timeout() { return std::chrono::seconds(1); }
+        };
+        struct Value {
+            inline static string name()
+            {
+                return std::string {"Value"};
+            };
+            using Interface = ServiceInterface;
+            using ValueType = uint32_t;
+            static const bool readable = true;
+            static const bool writable = true;
+            inline static const std::chrono::milliseconds default_timeout() { return std::chrono::seconds(1); }
         };
     };
 
 protected:
     core::dbus::Object::Ptr object;
 
-    Prop<Properties::Num> propNum;
-
-    map<string,  map<string, types::Variant>> getObjectDirectory()
-    {
-        return { {ServiceInterface::name(), getAllProperties()} };
-    }
-    map<string, types::Variant> getAllProperties() {
-        map<string, types::Variant> m;
-
-        m.insert(getProperty(propNum));
-
-        return m;
-    };
-};
-
-class SecondObject {
-public:
-    SecondObject(const core::dbus::Service::Ptr &service)
-            : object (service->add_object_for_path(types::ObjectPath{"/com/studiofuga/test/second"})) {
-    }
-    virtual sf::dbus::ObjectManagerSkeleton::ObjectDetails getManagedObjects() {
-        sf::dbus::ObjectManagerSkeleton::ObjectDetails d;
-        return d;
-    }
-
-protected:
-    core::dbus::Object::Ptr object;
-
-public:
-    struct Properties {
-
-    };
-
-    struct Methods {
-
-    };
+    Prop<Properties::Name> propName;
+    Prop<Properties::Comments> propComments;
+    Prop<Properties::Value> propValue;
 };
 
 namespace core {
@@ -105,6 +116,12 @@ namespace core {
             struct Service<ServiceInterface> {
                 inline static const std::string interface_name() {
                     return std::string{ServiceInterface::name()};
+                }
+            };
+            template<>
+            struct Service<OtherInterface> {
+                inline static const std::string interface_name() {
+                    return std::string{OtherInterface::name()};
                 }
             };
         }
@@ -117,6 +134,8 @@ namespace dbus = core::dbus;
 // Test with
 // dbus-send --session --print-reply --dest=com.studiofuga.test / org.freedesktop.DBus.ObjectManager.GetManagedObjects
 // dbus-send --session --print-reply --dest=com.studiofuga.test /com/studiofuga/test/first org.freedesktop.DBus.Properties.Get string:"com.studiofuga.test" string:"Num"
+// dbus-send --session --print-reply --dest=com.studiofuga.test /com/studiofuga/test/second org.freedesktop.DBus.Properties.Get string:"com.studiofuga.test" string:"Name"
+// dbus-send --session --print-reply --dest=com.studiofuga.test /com/studiofuga/test/first org.freedesktop.DBus.Properties.Set string:"com.studiofuga.test" string:"Num" variant:uint32:32
 
 int main()
 {
